@@ -1,10 +1,10 @@
 <script setup>
-import HelloWorld from "./components/HelloWorld.vue";
+import Autocomplete from "./components/Autocomplete.vue";
 </script>
 
 <template>
   <div>
-    <HelloWorld msg="Vite + Vue" />
+    <Autocomplete msg="Vite + Vue" />
   </div>
 </template>
 
