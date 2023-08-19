@@ -1,43 +1,38 @@
-<!-- <script setup>
-import { ref } from "vue";
-
-defineProps({
-  msg: String,
-});
-</script> -->
+<script setup>
+import NestedDropDown from "./NestedDropDown.vue";
+import Loader from "./Loader.vue";
+</script>
 
 <template>
   <div class="flex justify-center min-h-screen items-center">
     <div class="absolute">
-      <!-- <label>Insert here later</label> -->
-      <Popper>
-        <input
-          v-model="searchQuery"
-          @blur="isDropdownOpen = false"
-          class="border rounded px-4 py-2 w-64"
-          placeholder="Search..."
-        />
+      <div class="mb-1 opacity-40">
+        <label>{{ inputLabel }}</label>
+      </div>
+      <Popper
+        @keydown.up.prevent="callHandleArrowDownPressed"
+        @keydown.down.prevent="callHandleArrowDownPressed"
+      >
+        <div class="relative">
+          <input
+            v-model="inputQuery"
+            class="border rounded px-4 py-2 w-64"
+            :placeholder="inputDescription"
+            @input="debouncedSearch"
+          />
+          <Loader :isLoading="isLoading"></Loader>
+        </div>
+
         <template #content>
-          <ul
-            :style="{
-              borderStyle: searchQuery.length > 0 ? 'solid' : 'hidden',
-            }"
-            class="w-64 bg-white border rounded border-gray-300 shadow-md"
+          <NestedDropDown
+            :searchQuery="searchQuery"
+            :asyncSearch="asyncSearch"
+            :searchOnFocus="searchOnFocus"
+            :disable="disable"
+            :data="data"
+            ref="NestedDropDownRef"
           >
-            <li
-              v-for="(result, index) in filteredResults"
-              :key="index"
-              class="px-4 py-2 cursor-pointer hover:bg-gray-100 flex justify-between items-center"
-            >
-              <span>{{ result }}</span>
-              <input
-                type="checkbox"
-                :value="result"
-                v-model="selectedResults"
-                @click="selectResult(result)"
-              />
-            </li>
-          </ul>
+          </NestedDropDown>
         </template>
       </Popper>
     </div>
@@ -46,33 +41,47 @@ defineProps({
 
 <script>
 export default {
+  props: {
+    inputLabel: String,
+    inputDescription: String,
+    asyncSearch: Boolean, // Asynchronous search function
+    searchOnFocus: Boolean,
+    disable: Boolean,
+    data: Object,
+  },
+
+  components: {
+    NestedDropDown,
+  },
+
   data() {
     return {
+      inputQuery: "",
       searchQuery: "",
-      results: ["Apple", "Banana", "Cherry", "Date", "Fig", "Grape"],
+      debounceTimer: null,
+      isLoading: false,
     };
   },
-  computed: {
-    filteredResults() {
-      if (this.searchQuery.length > 0) {
-        let searchResult = this.results.filter((result) =>
-          result.toLowerCase().includes(this.searchQuery.toLowerCase())
-        );
 
-        if (searchResult.length == 0) {
-          searchResult = ["No result were found"];
-        }
-
-        return searchResult;
-      }
-    },
-  },
   methods: {
-    selectResult(result) {
-      this.searchQuery = result;
+    debouncedSearch() {
+      clearTimeout(this.debounceTimer);
+
+      let TIMEOUT = 0; // Adjust the debounce delay as needed
+      if (this.asyncSearch) {
+        TIMEOUT = 1000;
+        this.isLoading = true;
+      }
+
+      this.debounceTimer = setTimeout(() => {
+        this.searchQuery = this.inputQuery;
+        this.isLoading = false;
+      }, TIMEOUT); 
+    },
+
+    callHandleArrowDownPressed(event) {
+      this.$refs.NestedDropDownRef.handleArrowDownPressed(event.key);
     },
   },
 };
 </script>
-
-<style scoped></style>
