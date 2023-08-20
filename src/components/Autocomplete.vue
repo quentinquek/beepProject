@@ -1,5 +1,6 @@
 <script setup>
-import NestedDropDown from "./NestedDropDown.vue";
+import Dropdown from "./Dropdown.vue";
+import axios from "axios";
 import Loader from "./Loader.vue";
 </script>
 
@@ -10,13 +11,16 @@ import Loader from "./Loader.vue";
         <label>{{ inputLabel }}</label>
       </div>
       <Popper
-        @keydown.up.prevent="callHandleArrowDownPressed"
-        @keydown.down.prevent="callHandleArrowDownPressed"
+        @keydown.up.prevent="handleKeyboardNavigation"
+        @keydown.down.prevent="handleKeyboardNavigation"
+        @keydown.enter.prevent="handleKeyboardNavigation"
       >
         <div class="relative">
           <input
-            v-model="inputQuery"
+            v-model="searchQuery"
             class="border rounded px-4 py-2 w-64"
+            :class="searchOnFocus ? '' : 'focus:outline-none'"
+            :disabled="disable"
             :placeholder="inputDescription"
             @input="debouncedSearch"
           />
@@ -24,15 +28,15 @@ import Loader from "./Loader.vue";
         </div>
 
         <template #content>
-          <NestedDropDown
+          <Dropdown
             :searchQuery="searchQuery"
             :asyncSearch="asyncSearch"
             :searchOnFocus="searchOnFocus"
             :disable="disable"
-            :data="data"
-            ref="NestedDropDownRef"
+            :data="searchResult"
+            ref="DropdownRef"
           >
-          </NestedDropDown>
+          </Dropdown>
         </template>
       </Popper>
     </div>
@@ -47,16 +51,16 @@ export default {
     asyncSearch: Boolean, // Asynchronous search function
     searchOnFocus: Boolean,
     disable: Boolean,
-    data: Object,
+    data: String,
   },
 
   components: {
-    NestedDropDown,
+    Dropdown,
   },
 
   data() {
     return {
-      inputQuery: "",
+      searchResult: {},
       searchQuery: "",
       debounceTimer: null,
       isLoading: false,
@@ -74,13 +78,39 @@ export default {
       }
 
       this.debounceTimer = setTimeout(() => {
-        this.searchQuery = this.inputQuery;
-        this.isLoading = false;
-      }, TIMEOUT); 
+        if (this.searchQuery.length > 0) {
+          this.fetchAPIResults();
+        }
+      }, TIMEOUT);
     },
 
-    callHandleArrowDownPressed(event) {
-      this.$refs.NestedDropDownRef.handleArrowDownPressed(event.key);
+    fetchAPIResults() {
+      axios
+        .get(this.data)
+        .then((response) => {
+          const test = response.data.data;
+          let searchResult = {};
+          for (const anime of test) {
+            if (
+              anime.title.toLowerCase().includes(this.searchQuery.toLowerCase())
+            ) {
+              searchResult[anime.title] = anime.title;
+            }
+          }
+          this.searchResult = searchResult;
+
+          if (Object.keys(searchResult).length === 0) {
+            searchResult["test"] = "No result were found";
+          }
+          this.isLoading = false;
+        })
+        .catch((error) => {
+          console.error("API call error", error);
+        });
+    },
+
+    handleKeyboardNavigation(event) {
+      this.$refs.DropdownRef.handleKeyboardNavigation(event.key);
     },
   },
 };
