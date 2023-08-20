@@ -1,6 +1,5 @@
 <script setup>
 import Dropdown from "./Dropdown.vue";
-import axios from "axios";
 import Loader from "./Loader.vue";
 </script>
 
@@ -51,7 +50,7 @@ export default {
     asyncSearch: Boolean, // Asynchronous search function
     searchOnFocus: Boolean,
     disable: Boolean,
-    data: String,
+    searchResult: Object,
   },
 
   components: {
@@ -60,7 +59,6 @@ export default {
 
   data() {
     return {
-      searchResult: {},
       searchQuery: "",
       debounceTimer: null,
       isLoading: false,
@@ -77,36 +75,10 @@ export default {
         this.isLoading = true;
       }
 
-      this.debounceTimer = setTimeout(() => {
-        if (this.searchQuery.length > 0) {
-          this.fetchAPIResults();
-        }
+      this.debounceTimer = setTimeout(() => {  
+        this.$emit("fetchAPIData", this.searchQuery);
+        this.isLoading = false;
       }, TIMEOUT);
-    },
-
-    fetchAPIResults() {
-      axios
-        .get(this.data)
-        .then((response) => {
-          const test = response.data.data;
-          let searchResult = {};
-          for (const anime of test) {
-            if (
-              anime.title.toLowerCase().includes(this.searchQuery.toLowerCase())
-            ) {
-              searchResult[anime.title] = anime.title;
-            }
-          }
-          this.searchResult = searchResult;
-
-          if (Object.keys(searchResult).length === 0) {
-            searchResult["test"] = "No result were found";
-          }
-          this.isLoading = false;
-        })
-        .catch((error) => {
-          console.error("API call error", error);
-        });
     },
 
     handleKeyboardNavigation(event) {
